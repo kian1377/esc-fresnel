@@ -56,41 +56,35 @@ class DeformableMirror(poppy.AnalyticOpticalElement):
 
         self.Mx = xp.exp(-1j*2*np.pi*xp.outer(fx,x))
         self.My = xp.exp(-1j*2*np.pi*xp.outer(y,fy))
+        self.Mx_back = xp.exp(1j*2*np.pi*xp.outer(x,fx)) # adjoint DM model MFT matrices
+        self.My_back = xp.exp(1j*2*np.pi*xp.outer(fy,y))
+
+        self.dm_channels = xp.zeros((10,34,34))
+        self.total_command = xp.sum(self.dm_channels, axis=0)
 
         self.pxscl_tol = 1e-6
 
-    @property
-    def command(self):
-        return self._command
+    def set_command(self, command, channel=1):
+        command *= self.dm_mask
+        self.dm_channels[channel] = command
+        self.total_command = xp.sum(self.dm_channels, axis=0)
 
-    @command.setter
-    def command(self, command_values):
-        command_values *= self.dm_mask
-        self._actuators = self.map_command_to_actuators(command_values) # ensure you update the actuators if command is set
-        self._command = command_values
-    
-    @property
-    def actuators(self):
-        return self._actuators
+    def add_command(self, command, channel=1):
+        command *= self.dm_mask
+        self.dm_channels[channel] = self.dm_channels[channel] + command
+        self.total_command = xp.sum(self.dm_channels, axis=0)
 
-    @actuators.setter
-    def actuators(self, act_vector):
-        self._command = self.map_actuators_to_command(act_vector) # ensure you update the actuators if command is set
-        self._actuators = act_vector
-    
-    def map_command_to_actuators(self, command_values):
-        actuators = command_values.ravel()[self.dm_mask.ravel()]
-        return actuators
-        
-    def map_actuators_to_command(self, act_vector):
-        command = xp.zeros((self.Nact, self.Nact))
-        command[self.dm_mask] = act_vector
-        return command
-    
+    def zero_all_channels(self,):
+        self.dm_channels = xp.zeros((10,34,34))
+        self.total_command = xp.sum(self.dm_channels, axis=0)
+
+    def get_command(self, channel=1):
+        return self.dm_channels[channel]
+
     def get_surface(self):
-        mft_command = self.Mx@self.command@self.My
+        mft_command = self.Mx @ self.total_command @ self.My
         fourier_surf = self.inf_fun_fft * mft_command
-        surf = xp.fft.fftshift(xp.fft.ifft2(xp.fft.ifftshift(fourier_surf,))).real
+        surf = xp.fft.fftshift( xp.fft.ifft2( xp.fft.ifftshift( fourier_surf ))).real
         shift_pix = self.shift.to_value(u.m) / self.pixelscale.to_value(u.m/u.pix)
         surf = xcipy.ndimage.shift(surf, xp.flip(shift_pix), order=3)
         return surf

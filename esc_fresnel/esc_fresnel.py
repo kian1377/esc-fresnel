@@ -164,7 +164,7 @@ class single():
         self.dm_mask = self.DM.dm_mask
         self.Nacts = self.DM.Nacts
         self.dm_ref = dm_ref
-        self.set_dm(dm_ref)
+        self.set_dm(dm_ref, channel=0)
 
         self.return_pupil = False
 
@@ -180,20 +180,21 @@ class single():
     def setattr(self, attr, val):
         setattr(self, attr, val)
 
-    def reset_dm(self):
-        self.set_dm(self.dm_ref)
-    
     def zero_dm(self):
-        self.set_dm(xp.zeros((34,34)))
+        self.DM.zero_all_channels()
+
+    def reset_dm(self):
+        self.DM.zero_all_channels()
+        self.DM.set_command(self.dm_ref, channel=0)
         
-    def set_dm(self, command):
-        self.DM.command = command
+    def set_dm(self, command, channel=1):
+        self.DM.set_command(command, channel=channel)
         
-    def add_dm(self, command):
-        self.DM.command += command
+    def add_dm(self, command, channel=1):
+        self.DM.add_command(command, channel=channel)
         
-    def get_dm(self, only_actuators=False):
-        return self.DM.command
+    def get_dm(self, channel=1):
+        return self.DM.get_command(channel=channel)
     
     def init_fosys(self):
 

@@ -147,6 +147,15 @@ def TikhonovInverse(A, rcond=1e-15):
     s_inv = s/(s**2 + (rcond * s.max())**2)
     return (Vt.T * s_inv).dot(U.T)
 
+def beta_reg(J, beta=-1):
+    # J is the Jacobian
+    JTJ = xp.matmul(J.T, J)
+    rho = xp.diag(JTJ)
+    alpha2 = rho.max()
+
+    control_matrix = xp.matmul( xp.linalg.inv( JTJ + alpha2*10.0**(beta) * xp.eye(JTJ.shape[0]) ), J.T)
+    return control_matrix
+
 def make_gaussian_inf_fun(act_spacing=300e-6, sampling=10, coupling=0.15, Nact=4):
     ng = int(sampling*Nact)
     pxscl = act_spacing/(sampling)
