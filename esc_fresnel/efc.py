@@ -11,9 +11,11 @@ import matplotlib.pyplot as plt
 
 def compute_jacobian(
         M, 
+        calib_modes,
         control_mask, 
         amp=1e-9,
         channel=3,
+        plot=False,
     ):
 
     Nmask = int(control_mask.sum())
@@ -39,6 +41,11 @@ def compute_jacobian(
         print(f"\tCalibrated mode {i+1:d}/{M.Nacts:d} in {time.time()-start:.3f}s", end='')
         print("\r", end="")
 
+    M.reset_dm()
+    # if plot:
+    #     dm_response_map = xp.sqrt(xp.mean(xp.square( response_matrix.dot(calibration_modes.reshape(Nmodes, -1))), axis=0))
+    #     dm_response_map = dm_response_map.reshape(I.Nact,I.Nact) / xp.max(dm_response_map)
+
     return jac
 
 def run(M, 
@@ -47,18 +54,20 @@ def run(M,
         dm_mask,
         data,
         channel=3,
-        Nitr=3, 
+        num_iterations=3,
         gain=0.5, 
+        plot=False,
+        vmin=1e-10,
     ):
     
     starting_itr = len(data['images'])
-    total_command = copy.copy(data['commands'][-1]) if len(data['commands'])>0 else xp.zeros((I.Nact,I.Nact))
+    total_command = copy.copy(data['commands'][-1]) if len(data['commands'])>0 else xp.zeros((M.Nact,M.Nact))
 
-    del_command = xp.zeros((I.Nact,I.Nact)) # array to fill with actuator solutions
+    del_command = xp.zeros((M.Nact,M.Nact)) # array to fill with actuator solutions
     Nacts = control_matrix.shape[0]
     Nmask = int(control_mask.sum())
     E_ab_vec = xp.zeros(2*Nmask)
-    for i in range(Nitr):
+    for i in range(num_iterations):
         
         E_ab = M.calc_wf()
 
@@ -73,18 +82,22 @@ def run(M,
         mean_ni = xp.mean(image_ni[control_mask])
 
         data['images'].append(copy.copy(image_ni))
+        data['contrasts'].append(copy.copy(mean_ni))
         data['efields'].append(copy.copy(E_ab))
         data['commands'].append(copy.copy(total_command))
         data['del_commands'].append(copy.copy(del_command))
 
-        imshow3(
-            del_command, total_command, image_ni, 
-            f'$\delta$DM1', 
-            f'$\delta$DM2', 
-            f'Iteration {starting_itr + i:d} Image\nMean NI = {mean_ni:.3e}',
-            cmap1='viridis', cmap2='viridis', 
-            pxscl3=M.psf_pixelscale_lamD, lognorm3=True, vmin3=1e-9,
-        )
+        if plot:
+            imshow3(
+                del_command, total_command, image_ni, 
+                f'$\delta$DM Command', 
+                f'Total Command', 
+                f'Iteration {starting_itr + i:d} Image\nMean NI = {mean_ni:.3e}',
+                cmap1='viridis', cmap2='viridis', 
+                pxscl3=M.psf_pixelscale_lamD, 
+                lognorm3=True, 
+                vmin3=vmin,
+            )
 
     return data
 
