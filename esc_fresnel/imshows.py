@@ -16,9 +16,13 @@ def imshow(
         titles=[], 
         xlabels=[],
         ylabels=[],
+        title_fzs=[],
+        label_fzs=[],
         pxscls=[],
+        npix=[],
         cmaps=[],
         norms=[],
+        cbar_labels=[],
         grids=[],
         xticks=[],
         yticks=[], 
@@ -26,38 +30,40 @@ def imshow(
         figsize=None,
         dpi=125,
         Nrows=1,
+        Ncols=None, 
         wspace=None, 
         hspace=None, 
         return_fig=False,
-        display_fig=True,
     ):
 
     Nax = len(arrs)
     titles.extend([None] * (Nax - len(titles)))
     xlabels.extend([None] * (Nax - len(xlabels)))
     ylabels.extend([None] * (Nax - len(ylabels)))
+    title_fzs.extend([None] * (Nax - len(title_fzs)))
+    label_fzs.extend([None] * (Nax - len(label_fzs)))
     cmaps.extend([None] * (Nax - len(cmaps)))
     norms.extend([None] * (Nax - len(norms)))
+    cbar_labels.extend([None] * (Nax - len(cbar_labels)))
     grids.extend([None] * (Nax - len(grids)))
     xticks.extend([None] * (Nax - len(xticks)))
     yticks.extend([None] * (Nax - len(yticks)))
     pxscls.extend([None] * (Nax - len(pxscls)))
+    npix.extend([None] * (Nax - len(npix)))
     all_patches.extend([None] * (Nax - len(all_patches)))
 
     if figsize is None:
         if Nax==1:
-            figsize = (5,5)
+            figsize = (4,4)
         elif Nax==2:
-            figsize = (10,5)
+            figsize = (10,4)
         elif Nax==3:
-            figsize = (15,5)
+            figsize = (15,7)
         else:
-            figsize = (8,8)
+            figsize = (10,10)
     
-    if Nrows==1:
+    if Nrows==1 and Ncols is None:
         Ncols = Nax
-    else:
-        Ncols = Nax//Nrows + Nax%Nrows
     fig, axs = plt.subplots(nrows=Nrows, ncols=Ncols, figsize=figsize, dpi=dpi)
     print(np.ndim(axs))
 
@@ -68,13 +74,17 @@ def imshow(
         title = titles[i]
         xlabel = xlabels[i]
         ylabel = ylabels[i]
+        title_fz = title_fzs[i]
+        label_fz = label_fzs[i]
         cmap = cmaps[i]
         norm = norms[i]
+        cbar_label = cbar_labels[i]
         xtick = xticks[i]
         ytick = yticks[i]
         pxscl = pxscls[i]
         grid = grids[i]
         patches = all_patches[i]
+        narr = npix[i]
 
         Nwidth = arr.shape[1]
         Nheight = arr.shape[0]
@@ -85,14 +95,17 @@ def imshow(
         elif np.ndim(axs)==1:
             ax = axs[i]
         elif np.ndim(axs)==2:
-            row_ind = i//Nrows
-            col_ind = i%Nrows
+            row_ind = i//Ncols
+            col_ind = i%Ncols
             ax = axs[row_ind, col_ind]
 
+        if narr is not None: 
+            arr = utils.pad_or_crop(arr, narr)
+
         im = ax.imshow(ensure_np_array(arr), cmap=cmap, norm=norm, extent=extent)
-        ax.set_title(title)
-        ax.set_xlabel(xlabel)
-        ax.set_ylabel(ylabel)
+        ax.set_title(title, fontsize=title_fz)
+        ax.set_xlabel(xlabel, fontsize=label_fz)
+        ax.set_ylabel(ylabel, fontsize=label_fz)
         if xtick is not None: ax.set_xticks(xtick)
         if ytick is not None: ax.set_yticks(ytick)
         if grid is not None: ax.grid()
@@ -101,16 +114,16 @@ def imshow(
                 ax.add_patch(patch)
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="4%", pad=0.075)
-        fig.colorbar(im, cax=cax)
+        cbar = fig.colorbar(im, cax=cax)
+        cbar.ax.set_ylabel(cbar_label, rotation=0, labelpad=7)
     
     plt.subplots_adjust(wspace=wspace, hspace=hspace)
     plt.close()
-
-    if display_fig: 
-        display(fig)
     
     if return_fig:
         return fig, axs
+    else:
+        display(fig)
 
 def imshow1(
         arr, 
