@@ -22,6 +22,7 @@ def imshow(
         grids=[],
         xticks=[],
         yticks=[], 
+        all_patches=[],
         figsize=None,
         dpi=125,
         Nrows=1,
@@ -41,6 +42,7 @@ def imshow(
     xticks.extend([None] * (Nax - len(xticks)))
     yticks.extend([None] * (Nax - len(yticks)))
     pxscls.extend([None] * (Nax - len(pxscls)))
+    all_patches.extend([None] * (Nax - len(all_patches)))
 
     if figsize is None:
         if Nax==1:
@@ -72,6 +74,7 @@ def imshow(
         ytick = yticks[i]
         pxscl = pxscls[i]
         grid = grids[i]
+        patches = all_patches[i]
 
         Nwidth = arr.shape[1]
         Nheight = arr.shape[0]
@@ -93,6 +96,9 @@ def imshow(
         if xtick is not None: ax.set_xticks(xtick)
         if ytick is not None: ax.set_yticks(ytick)
         if grid is not None: ax.grid()
+        if patches is not None: 
+            for patch in patches:
+                ax.add_patch(patch)
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("right", size="4%", pad=0.075)
         fig.colorbar(im, cax=cax)
