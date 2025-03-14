@@ -86,6 +86,9 @@ def imshow(
         patches = all_patches[i]
         narr = npix[i]
 
+        if narr is not None: 
+            arr = utils.pad_or_crop(arr, narr)
+
         Nwidth = arr.shape[1]
         Nheight = arr.shape[0]
         extent = None if pxscl is None else [-Nwidth/2*pxscl, Nwidth/2*pxscl, -Nheight/2*pxscl, Nheight/2*pxscl]
@@ -98,9 +101,6 @@ def imshow(
             row_ind = i//Ncols
             col_ind = i%Ncols
             ax = axs[row_ind, col_ind]
-
-        if narr is not None: 
-            arr = utils.pad_or_crop(arr, narr)
 
         im = ax.imshow(ensure_np_array(arr), cmap=cmap, norm=norm, extent=extent)
         ax.set_title(title, fontsize=title_fz)

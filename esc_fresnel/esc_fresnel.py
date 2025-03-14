@@ -13,9 +13,6 @@ import os
 from pathlib import Path
 import copy
 from scipy.signal import windows
-import ray
-
-mpath = os.path.dirname(__file__)
 
 import poppy
 from poppy.poppy_core import PlaneType
