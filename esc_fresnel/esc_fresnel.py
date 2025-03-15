@@ -37,20 +37,20 @@ class single():
         self.pupil_diam = 2.43*u.m
         self.lyot_stop_diam = 3.7*u.mm
         self.wavelength_c = 650e-9*u.m
-        self.psf_pixelscale = 3.76*u.um/u.pix
+        self.camsci_pxscl = 3.76*u.um/u.pix
 
         # The following quantities are computed using the Fresnel model and hard-coded in
-        self.dm_pupil_diam = 9.351*u.mm
-        self.lyot_pupil_diam = 4.153042573359455*u.mm
-        self.final_pupil_diam = 3.9930329934638595 *u.mm
+        self.dm_pupil_diam = 9.351 * u.mm
+        self.lyot_pupil_diam = 4.153042573359455 * u.mm
+        self.final_pupil_diam = 3.9930329934638595 * u.mm
         self.final_fl = esc_optics.apparent_fls['oap10']
         self.fpm_fl = esc_optics.apparent_fls['oap6']
         
         self.lyot_ratio = (self.lyot_stop_diam / self.lyot_pupil_diam).decompose().value
         self.lyot_to_final_mag = self.final_pupil_diam / self.lyot_pupil_diam
         self.exit_pupil_diam = self.lyot_stop_diam * self.lyot_to_final_mag
-        self.psf_pixelscale_lamD = (self.psf_pixelscale / (self.final_fl * self.wavelength_c / self.exit_pupil_diam)).decompose().value
-        self.scicam_airy_rad = 1.22 * (self.wavelength_c * self.final_fl / self.exit_pupil_diam).to(u.mm)
+        self.camsci_pxscl_lamDc = (self.camsci_pxscl / (self.final_fl * self.wavelength_c / self.exit_pupil_diam)).decompose().value
+        self.camsci_airy_rad = 1.22 * (self.wavelength_c * self.final_fl / self.exit_pupil_diam).to(u.mm)
 
         self.wcc_efl = 96551.6*u.mm
         self.wcc_fnum = 40.0402
@@ -170,7 +170,7 @@ class single():
 
         self.det_rotation = 0
 
-    # useful for parallelization with ray actors
+    # useful for parallelization with ray ACTORS
     def getattr(self, attr):
         return getattr(self, attr)
     
@@ -258,7 +258,7 @@ class single():
         fosys2.add_optic(esc_optics.elements['oap10'], distance=esc_optics.distances['output_lp-oap10'])
         if self.wfes.get('oap10') is not None: fosys2.add_optic(self.wfes['oap10'])
         fosys2.add_optic(poppy.Rotation(self.det_rotation, units='degrees'))
-        fosys2.add_optic(poppy.Detector(pixelscale=self.psf_pixelscale, fov_pixels=self.npsf, interp_order=3, name='   Camsci (FP)',), distance=esc_optics.distances['oap10-scicam'] + self.scicam_corr)
+        fosys2.add_optic(poppy.Detector(pixelscale=self.camsci_pxscl, fov_pixels=self.npsf, interp_order=3, name='   Camsci (FP)',), distance=esc_optics.distances['oap10-scicam'] + self.scicam_corr)
 
         return fosys1, fosys2
     
@@ -366,64 +366,69 @@ class single():
 
         return amp*xp.exp(1j*phs)
 
-class multi():
+import ray
+
+class parallel():
     '''
     This is a class that sets up the parallelization of calc_psf such that it 
     we can generate polychromatic wavefronts that are then fed into the 
     various wavefront simulations.
     '''
-    def __init__(self, 
-                 actors,
-                 ):
-        
-        self.actors = actors
-        self.Nactors = len(actors)
+    def __init__(
+            self, 
+            ACTORS,
+        ):
+
+        self.ACTORS = ACTORS
+        self.NACTORS = len(ACTORS)
         self.wavelength_c = self.getattr('wavelength_c')
 
-        self.npix = ray.get(actors[0].getattr.remote('npix'))
-        self.oversample = ray.get(actors[0].getattr.remote('oversample'))
+        self.npix = ray.get(ACTORS[0].getattr.remote('npix'))
+        self.oversample = ray.get(ACTORS[0].getattr.remote('oversample'))
         
-        self.psf_pixelscale = ray.get(actors[0].getattr.remote('psf_pixelscale'))
-        self.psf_pixelscale_lamD = ray.get(actors[0].getattr.remote('psf_pixelscale_lamD'))
-        self.npsf = ray.get(actors[0].getattr.remote('npsf'))
+        self.camsci_pxscl = ray.get(ACTORS[0].getattr.remote('camsci_pxscl'))
+        self.camsci_pxscl_lamDc = ray.get(ACTORS[0].getattr.remote('camsci_pxscl_lamDc'))
+        self.npsf = ray.get(ACTORS[0].getattr.remote('npsf'))
 
-        self.dm_mask = ray.get(actors[0].getattr.remote('dm_mask'))
+        self.dm_mask = ray.get(ACTORS[0].getattr.remote('dm_mask'))
         self.Nact = self.dm_mask.shape[0]
-        self.dm_ref = ray.get(actors[0].getattr.remote('dm_ref'))
+        self.dm_ref = ray.get(ACTORS[0].getattr.remote('dm_ref'))
 
         self.Imax_ref = 1
 
     def getattr(self, attr):
-        return ray.get(self.actors[0].getattr.remote(attr))
+        return ray.get(self.ACTORS[0].getattr.remote(attr))
     
     def setattr(self, attr, value):
-        '''
-        Sets a value for all actors
-        '''
-        for i in range(len(self.actors)):
-            self.actors[i].setattr.remote(attr,value)
+        for i in range(len(self.ACTORS)):
+            self.ACTORS[i].setattr.remote(attr,value)
     
     def reset_dm(self):
-        self.set_dm(self.dm_ref)
-    
-    def zero_dm(self):
-        self.set_dm(np.zeros((34,34)))
-        
-    def set_dm(self, value):
-        for i in range(len(self.actors)):
-            self.actors[i].set_dm.remote(value)
+        for i in range(len(self.ACTORS)):
+            self.ACTORS[i].reset_dm.remote()
 
-    def add_dm(self, value):
-        for i in range(len(self.actors)):
-            self.actors[i].add_dm.remote(value)
+    def zero_dm(self, channel=1):
+        for i in range(len(self.ACTORS)):
+            self.ACTORS[i].zero_dm.remote(channel)
 
-    def get_dm(self):
-        return ray.get(self.actors[0].get_dm.remote())
+    def set_dm(self, command, channel=1):
+        for i in range(len(self.ACTORS)):
+            self.ACTORS[i].set_dm.remote(command, channel)
+
+    def add_dm(self, command, channel=1):
+        for i in range(len(self.ACTORS)):
+            self.ACTORS[i].add_dm.remote(command, channel)
+
+    def get_dm(self, channel=1):
+        return ray.get(self.ACTORS[0].get_dm.remote(channel))
+
+    # def get_dm_total(self):
+    #     return self.getattr('dm_total')
 
     def snap(self):
         pending_ims = []
-        for i in range(self.Nactors):
-            future_ims = self.actors[i].snap.remote()
+        for i in range(self.NACTORS):
+            future_ims = self.ACTORS[i].snap.remote()
             pending_ims.append(future_ims)
         ims = ray.get(pending_ims)
         ims = xp.array(ims)

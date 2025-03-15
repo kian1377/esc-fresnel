@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 *.mp4
 
-stppsf/wfe-maps/
+*/wfe-maps/
 
 # C extensions
 *.so
