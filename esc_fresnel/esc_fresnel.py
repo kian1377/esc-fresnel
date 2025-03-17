@@ -166,7 +166,7 @@ class single():
         self.return_pupil = False
 
         self.source_offset = (0,0)
-        self.as_per_lamD = ((self.wavelength_c/self.pupil_diam)*u.radian).to(u.arcsec)
+        self.as_per_lamD = ((self.wavelength_c/(self.pupil_diam*self.lyot_ratio))*u.radian).to(u.arcsec)
 
         self.det_rotation = 0
 
@@ -268,7 +268,7 @@ class single():
             npix=self.npix, oversample=self.oversample,
         )
         
-        if self.source_offset[0]>0 or self.source_offset[1]>0:
+        if np.abs(self.source_offset[0])>0 or np.abs(self.source_offset[1])>0:
             inwave.tilt(Xangle=self.source_offset[0]*self.as_per_lamD, Yangle=self.source_offset[1]*self.as_per_lamD)
 
         return inwave
