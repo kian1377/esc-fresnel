@@ -94,7 +94,7 @@ def run(M,
                 f'Total Command', 
                 f'Iteration {starting_itr + i:d} Image\nMean NI = {mean_ni:.3e}',
                 cmap1='viridis', cmap2='viridis', 
-                pxscl3=M.psf_pixelscale_lamD, 
+                pxscl3=M.camsci_pxscl_lamDc, 
                 lognorm3=True, 
                 vmin3=vmin,
             )
