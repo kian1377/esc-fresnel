@@ -26,7 +26,7 @@ class single():
             self, 
             wavelength=650e-9*u.m, 
             npix=1000, 
-            oversample=2.048, 
+            oversample=4.096, 
             npsf=256,
             dm_ref=xp.zeros((34,34)),
             use_corrections=True,
@@ -40,6 +40,7 @@ class single():
         self.camsci_pxscl = 3.76*u.um/u.pix
 
         # The following quantities are computed using the Fresnel model and hard-coded in
+        self.fsm_pupil_diam = 9.351 * u.mm
         self.dm_pupil_diam = 9.351 * u.mm
         self.lyot_pupil_diam = 4.153042573359455 * u.mm
         self.final_pupil_diam = 3.9930329934638595 * u.mm
@@ -99,6 +100,25 @@ class single():
         self.LYOT = poppy.CircularAperture(
             radius=self.lyot_stop_diam/2, 
             name='Lyot Stop (pupil)',
+        )
+        
+        self.fsm_diam = 25.4*u.mm
+        self.fsm_oversample = self.fsm_diam.to_value(u.mm) / self.fsm_pupil_diam.to_value(u.mm)
+        self.Nfsm = int(np.round(self.npix * self.fsm_oversample ))
+        pwf = poppy.FresnelWavefront(beam_radius=self.fsm_diam/2, npix=self.Nfsm, oversample=1)
+        FSM_AP = poppy.CircularAperture(radius=self.fsm_diam/2).get_transmission(pwf)
+
+        # self.tt_pv_to_rms = 1/4
+        self.tt_pv_to_rms = 1/3.99626255
+        self.as_per_radian = 206264.806
+
+        self.TT_MODES = utils.create_zernike_modes(FSM_AP, nmodes=2, remove_modes=1) # define tip/tilt modes
+        self.FSM_TT = poppy.ArrayOpticalElement(
+            opd=xp.zeros((self.Nfsm, self.Nfsm)), 
+            transmission=FSM_AP, 
+            pixelscale=self.fsm_pupil_diam/(self.npix*u.pix), 
+            planetype=inter, 
+            name='FSM TT OPD (Pupil-ish)',
         )
 
         self.DOPD = poppy.ArrayOpticalElement(
@@ -177,6 +197,23 @@ class single():
     def setattr(self, attr, val):
         setattr(self, attr, val)
 
+    def set_fsm(self, tt_vals, lamD=True):
+
+        if lamD: 
+            tt_vals[0] = tt_vals[0] * self.as_per_lamD.to_value(u.arcsec) # lamD * as/lamD
+            tt_vals[1] = tt_vals[1] * self.as_per_lamD.to_value(u.arcsec) # lamD * as/lamD
+
+        tip_at_pupil_pv = np.tan(tt_vals[0]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.fsm_oversample
+        tilt_at_pupil_pv = np.tan(tt_vals[1]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.fsm_oversample
+
+        # tip_at_pupil_pv = np.tan(tt_vals[0]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.Nfsm/self.npix
+        # tilt_at_pupil_pv = np.tan(tt_vals[1]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.Nfsm/self.npix
+
+        tip_at_pupil_rms = tip_at_pupil_pv * self.tt_pv_to_rms
+        tilt_at_pupil_rms = tilt_at_pupil_pv * self.tt_pv_to_rms
+
+        self.FSM_TT.opd = tip_at_pupil_rms*self.TT_MODES[0] + tilt_at_pupil_rms*self.TT_MODES[1]
+
     def zero_dm(self):
         self.DM.zero_all_channels()
 
@@ -218,6 +255,7 @@ class single():
         fosys1.add_optic(esc_optics.elements['oap3'], distance=esc_optics.distances['ifp1-oap3'] - self.ifp1_corr)
         if self.wfes.get('oap3') is not None: fosys1.add_optic(self.wfes['oap3'])
         fosys1.add_optic(esc_optics.elements['fsm'], distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
+        fosys1.add_optic(self.FSM_TT)
         if self.wfes.get('fsm') is not None: fosys1.add_optic(self.wfes['fsm'])
         fosys1.add_optic(esc_optics.elements['fm2'], distance=esc_optics.distances['fsm-fm2'] - self.fsm_corr)
         if self.wfes.get('fm2') is not None: fosys1.add_optic(self.wfes['fm2'])
