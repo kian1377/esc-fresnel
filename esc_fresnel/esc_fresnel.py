@@ -96,13 +96,13 @@ class single():
 
         self.EP = poppy.CircularAperture(
             radius=self.pupil_diam/2, 
-            name='Entrance Pupil (subaperture)', 
+            name='entrance_pupil', 
             planetype=pupil,
         )
 
         self.LYOT = poppy.CircularAperture(
             radius=self.lyot_stop_diam/2, 
-            name='Lyot Stop (pupil)',
+            name='lyot_stop (pupil)',
         )
         
         # self.tt_pv_to_rms = 1/4
@@ -114,12 +114,12 @@ class single():
         pwf = poppy.FresnelWavefront(beam_radius=self.m4_diam/2, npix=self.Nm4, oversample=1)
         M4_AP = poppy.CircularAperture(radius=self.m4_diam/2).get_transmission(pwf)
         self.M4_TT_MODES = utils.create_zernike_modes(M4_AP, nmodes=2, remove_modes=1) # define tip/tilt modes
-        self.M4_TT = poppy.ArrayOpticalElement(
+        self.M4 = poppy.ArrayOpticalElement(
             opd=xp.zeros((self.Nm4, self.Nm4)), 
             transmission=M4_AP, 
             pixelscale=self.m4_pupil_diam/(self.npix*u.pix), 
             planetype=inter, 
-            name='M4 TT OPD (Pupil)',
+            name='M4 (Pupil)',
         )
 
         self.fsm_oversample = self.fsm_diam.to_value(u.mm) / self.fsm_pupil_diam.to_value(u.mm)
@@ -127,12 +127,12 @@ class single():
         pwf = poppy.FresnelWavefront(beam_radius=self.fsm_diam/2, npix=self.Nfsm, oversample=1)
         FSM_AP = poppy.CircularAperture(radius=self.fsm_diam/2).get_transmission(pwf)
         self.FSM_TT_MODES = utils.create_zernike_modes(FSM_AP, nmodes=2, remove_modes=1) # define tip/tilt modes
-        self.FSM_TT = poppy.ArrayOpticalElement(
+        self.FSM = poppy.ArrayOpticalElement(
             opd=xp.zeros((self.Nfsm, self.Nfsm)), 
             transmission=FSM_AP, 
             pixelscale=self.fsm_pupil_diam/(self.npix*u.pix), 
             planetype=inter, 
-            name='FSM TT OPD (Pupil-ish)',
+            name='FSM (Pupil-ish)',
         )
 
         self.DOPD = poppy.ArrayOpticalElement(
@@ -186,6 +186,7 @@ class single():
             coupling=0.15, 
             Nact=self.Nact+2,
         )
+
         self.DM = dm.DeformableMirror(
             inf_fun=inf_fun, 
             inf_sampling=inf_sampling, 
@@ -225,7 +226,7 @@ class single():
         tip_at_pupil_rms = tip_at_pupil_pv * self.tt_pv_to_rms
         tilt_at_pupil_rms = tilt_at_pupil_pv * self.tt_pv_to_rms
 
-        self.M4_TT.opd = tip_at_pupil_rms*self.M4_TT_MODES[0] + tilt_at_pupil_rms*self.M4_TT_MODES[1]
+        self.M4.opd = tip_at_pupil_rms*self.M4_TT_MODES[0] + tilt_at_pupil_rms*self.M4_TT_MODES[1]
 
     def set_fsm(self, tt_vals, lamD=True):
 
@@ -241,7 +242,7 @@ class single():
         tip_at_pupil_rms = tip_at_pupil_pv * self.tt_pv_to_rms
         tilt_at_pupil_rms = tilt_at_pupil_pv * self.tt_pv_to_rms
 
-        self.FSM_TT.opd = tip_at_pupil_rms*self.FSM_TT_MODES[0] + tilt_at_pupil_rms*self.FSM_TT_MODES[1]
+        self.FSM.opd = tip_at_pupil_rms*self.FSM_TT_MODES[0] + tilt_at_pupil_rms*self.FSM_TT_MODES[1]
 
     def zero_dm(self):
         self.DM.zero_all_channels()
@@ -270,8 +271,8 @@ class single():
         if self.wfes.get('m2') is not None: fosys1.add_optic(self.wfes['m2'])
         fosys1.add_optic(esc_optics.elements['m3'], distance=esc_optics.distances['m2-m3'])
         if self.wfes.get('m3') is not None: fosys1.add_optic(self.wfes['m3'])
-        fosys1.add_optic(esc_optics.elements['m4'], distance=esc_optics.distances['m3-m4'] + self.m4_corr)
-        fosys1.add_optic(self.M4_TT)
+        # fosys1.add_optic(esc_optics.elements['m4'], distance=esc_optics.distances['m3-m4'] + self.m4_corr)
+        fosys1.add_optic(self.M4, distance=esc_optics.distances['m3-m4'] + self.m4_corr)
         if self.wfes.get('m4') is not None: fosys1.add_optic(self.wfes['m4'])
         fosys1.add_optic(esc_optics.elements['wcc_fp'], distance=esc_optics.distances['m4-wcc_fp'] - self.m4_corr + self.wcc_corr)
         fosys1.add_optic(esc_optics.elements['oap1'], distance=esc_optics.distances['wcc_fp-oap1'] - self.wcc_corr)
@@ -284,8 +285,8 @@ class single():
         fosys1.add_optic(esc_optics.elements['ifp1'], distance=esc_optics.distances['oap2-ifp1'] + self.ifp1_corr)
         fosys1.add_optic(esc_optics.elements['oap3'], distance=esc_optics.distances['ifp1-oap3'] - self.ifp1_corr)
         if self.wfes.get('oap3') is not None: fosys1.add_optic(self.wfes['oap3'])
-        fosys1.add_optic(esc_optics.elements['fsm'], distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
-        fosys1.add_optic(self.FSM_TT)
+        # fosys1.add_optic(esc_optics.elements['fsm'], distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
+        fosys1.add_optic(self.FSM, distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
         if self.wfes.get('fsm') is not None: fosys1.add_optic(self.wfes['fsm'])
         fosys1.add_optic(esc_optics.elements['fm2'], distance=esc_optics.distances['fsm-fm2'] - self.fsm_corr)
         if self.wfes.get('fm2') is not None: fosys1.add_optic(self.wfes['fm2'])
@@ -326,7 +327,7 @@ class single():
         fosys2.add_optic(esc_optics.elements['oap10'], distance=esc_optics.distances['output_lp-oap10'])
         if self.wfes.get('oap10') is not None: fosys2.add_optic(self.wfes['oap10'])
         fosys2.add_optic(poppy.Rotation(self.det_rotation, units='degrees'))
-        fosys2.add_optic(poppy.Detector(pixelscale=self.camsci_pxscl, fov_pixels=self.npsf, interp_order=3, name='   Camsci (FP)',), distance=esc_optics.distances['oap10-scicam'] + self.scicam_corr)
+        fosys2.add_optic(poppy.Detector(pixelscale=self.camsci_pxscl, fov_pixels=self.npsf, interp_order=3, name='   camsci (fp)',), distance=esc_optics.distances['oap10-scicam'] + self.scicam_corr)
 
         return fosys1, fosys2
     
