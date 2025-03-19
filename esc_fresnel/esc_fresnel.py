@@ -472,6 +472,14 @@ class parallel():
         for i in range(len(self.ACTORS)):
             self.ACTORS[i].setattr.remote(attr,value)
     
+    def set_m4(self, tt_vals, lamD=True):
+        for i in range(len(self.ACTORS)):
+            self.ACTORS[i].set_m4.remote(tt_vals, lamD)
+
+    def set_fsm(self, tt_vals, lamD=True):
+        for i in range(len(self.ACTORS)):
+            self.ACTORS[i].set_fsm.remote(tt_vals, lamD)
+
     def reset_dm(self):
         for i in range(len(self.ACTORS)):
             self.ACTORS[i].reset_dm.remote()
@@ -490,9 +498,6 @@ class parallel():
 
     def get_dm(self, channel=1):
         return ray.get(self.ACTORS[0].get_dm.remote(channel))
-
-    # def get_dm_total(self):
-    #     return self.getattr('dm_total')
 
     def snap(self):
         pending_ims = []
