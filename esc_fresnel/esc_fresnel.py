@@ -34,10 +34,10 @@ class single():
         
         self.wavelength = wavelength
         
-        self.pupil_diam = 2.43*u.m
-        self.lyot_stop_diam = 3.7*u.mm
-        self.wavelength_c = 650e-9*u.m
-        self.camsci_pxscl = 3.76*u.um/u.pix
+        self.pupil_diam = 2.43 * u.m
+        self.lyot_stop_diam = 3.7 * u.mm
+        self.wavelength_c = 650e-9 * u.m
+        self.camsci_pxscl = 3.76 * u.um/u.pix
 
         # The following quantities are computed using the Fresnel model and hard-coded in
         self.m4_pupil_diam = 31.742 * u.mm
@@ -167,7 +167,7 @@ class single():
 
         y,x = (xp.indices((self.N_vortex_hres, self.N_vortex_hres)) - self.N_vortex_hres//2)*self.hres_sampling
         r = xp.sqrt(x**2 + y**2)
-        self.hres_dot_mask = r>=0.3/2
+        self.hres_dot_mask = r>=0.15/2
 
         '''
         TODO:
