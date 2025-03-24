@@ -42,7 +42,7 @@ class single():
 
         # The following quantities are computed using the Fresnel model and hard-coded in
         self.m4_pupil_diam = 31.742 * u.mm
-        self.m4_diam = 90 * u.mm
+        self.m4_diam = 90.0 * u.mm
         self.fsm_pupil_diam = 9.351 * u.mm
         self.fsm_diam = 25.4*u.mm
         self.dm_pupil_diam = 9.351 * u.mm
@@ -130,7 +130,8 @@ class single():
 
         self.m4_pupil_ratio = self.m4_diam.to_value(u.mm) / self.m4_pupil_diam.to_value(u.mm)
         self.npix_m4 = int(np.round(self.npix * self.m4_pupil_ratio ))
-        pwf = poppy.FresnelWavefront(beam_radius=self.m4_diam/2 * self.N/self.npix_m4, npix=self.N, oversample=1)
+        self.Nm4 = 4500
+        pwf = poppy.FresnelWavefront(beam_radius=self.m4_diam/2 * self.Nm4/self.npix_m4, npix=self.Nm4, oversample=1)
         M4_AP = poppy.CircularAperture(
             radius=self.m4_diam/2, 
             shift_x=1.253559E+01*u.mm, 
@@ -138,7 +139,7 @@ class single():
         ).get_transmission(pwf)
         self.M4_TT_MODES = utils.create_zernike_modes(M4_AP, nmodes=2, remove_modes=1) # define tip/tilt modes
         self.M4 = poppy.ArrayOpticalElement(
-            opd=xp.zeros((self.N, self.N)), 
+            opd=xp.zeros((self.Nm4, self.Nm4)), 
             transmission=M4_AP, 
             pixelscale=self.m4_pupil_diam/(self.npix*u.pix), 
             planetype=inter, 
@@ -295,14 +296,12 @@ class single():
         if self.wfes.get('oap1') is not None: fosys1.add_optic(self.wfes['oap1'])
         fosys1.add_optic(esc_optics.elements['fm1'], distance=esc_optics.distances['oap1-fm1'])
         if self.wfes.get('fm1') is not None: fosys1.add_optic(self.wfes['fm1'])
-        # fosys1.add_optic(esc_optics.elements['pupil_mask'], distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
         fosys1.add_optic(self.PUPIL_MASK, distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
         fosys1.add_optic(esc_optics.elements['oap2'], distance=esc_optics.distances['pupil_mask-oap2'] - self.pupil_mask_corr)
         if self.wfes.get('oap2') is not None: fosys1.add_optic(self.wfes['oap2'])
         fosys1.add_optic(esc_optics.elements['ifp1'], distance=esc_optics.distances['oap2-ifp1'] + self.ifp1_corr)
         fosys1.add_optic(esc_optics.elements['oap3'], distance=esc_optics.distances['ifp1-oap3'] - self.ifp1_corr)
         if self.wfes.get('oap3') is not None: fosys1.add_optic(self.wfes['oap3'])
-        # fosys1.add_optic(esc_optics.elements['fsm'], distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
         fosys1.add_optic(self.FSM, distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
         if self.wfes.get('fsm') is not None: fosys1.add_optic(self.wfes['fsm'])
         fosys1.add_optic(esc_optics.elements['fm2'], distance=esc_optics.distances['fsm-fm2'] - self.fsm_corr)
