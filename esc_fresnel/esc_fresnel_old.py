@@ -33,9 +33,8 @@ class single():
         ):
         
         self.wavelength = wavelength
-
-        self.full_pupil_diam = 6.5*u.m
-        self.esc_pupil_diam = 2.43 * u.m
+        
+        self.pupil_diam = 2.43 * u.m
         self.lyot_stop_diam = 3.7 * u.mm
         self.wavelength_c = 650e-9 * u.m
         self.camsci_pxscl = 3.76 * u.um/u.pix
@@ -90,32 +89,14 @@ class single():
 
         self.Imax_ref = 1
 
+        self.npsf = npsf
         self.npix = npix
         self.oversample = oversample
         self.N = int(self.npix*self.oversample)
-        self.npsf = npsf
 
-        self.full_esc_ratio = self.full_pupil_diam.to_value(u.mm) / self.esc_pupil_diam.to_value(u.mm)
-        self.npix_full = int(np.round(self.npix * self.full_esc_ratio))
-        self.FULL_EP = poppy.CircularAperture(
-            radius=self.full_pupil_diam/2, 
-            shift_x=-9.746832E+02*u.mm,
-            shift_y=-1.666386E+03*u.mm,
+        self.EP = poppy.CircularAperture(
+            radius=self.pupil_diam/2, 
             name='entrance_pupil', 
-            planetype=pupil,
-        )
-
-        self.FULL_OPD = poppy.ArrayOpticalElement(
-            opd=xp.zeros((self.N, self.N)), 
-            pixelscale=self.esc_pupil_diam/(self.npix*u.pix), 
-            planetype=pupil, 
-            name='Full Pupil OPD',
-        )
-
-        self.pupil_mask_diam = 12.726*u.mm
-        self.PUPIL_MASK = poppy.CircularAperture(
-            radius=self.pupil_mask_diam/2, 
-            name='pupil_mask', 
             planetype=pupil,
         )
 
@@ -128,37 +109,40 @@ class single():
         self.tt_pv_to_rms = 1/3.99626255
         self.as_per_radian = 206264.806
 
-        self.m4_pupil_ratio = self.m4_diam.to_value(u.mm) / self.m4_pupil_diam.to_value(u.mm)
-        self.npix_m4 = int(np.round(self.npix * self.m4_pupil_ratio ))
-        pwf = poppy.FresnelWavefront(beam_radius=self.m4_diam/2 * self.N/self.npix_m4, npix=self.N, oversample=1)
-        M4_AP = poppy.CircularAperture(
-            radius=self.m4_diam/2, 
-            shift_x=1.253559E+01*u.mm, 
-            shift_y=2.177167E+01*u.mm,
-        ).get_transmission(pwf)
+        self.m4_oversample = self.m4_diam.to_value(u.mm) / self.m4_pupil_diam.to_value(u.mm)
+        self.Nm4 = int(np.round(self.npix * self.m4_oversample ))
+        pwf = poppy.FresnelWavefront(beam_radius=self.m4_diam/2, npix=self.Nm4, oversample=1)
+        M4_AP = poppy.CircularAperture(radius=self.m4_diam/2).get_transmission(pwf)
         self.M4_TT_MODES = utils.create_zernike_modes(M4_AP, nmodes=2, remove_modes=1) # define tip/tilt modes
         self.M4 = poppy.ArrayOpticalElement(
-            opd=xp.zeros((self.N, self.N)), 
+            opd=xp.zeros((self.Nm4, self.Nm4)), 
             transmission=M4_AP, 
             pixelscale=self.m4_pupil_diam/(self.npix*u.pix), 
             planetype=inter, 
             name='M4 (Pupil)',
         )
 
-        self.fsm_pupil_ratio = self.fsm_diam.to_value(u.mm) / self.fsm_pupil_diam.to_value(u.mm)
-        self.npix_fsm = int(np.round(self.npix * self.fsm_pupil_ratio ))
-        pwf = poppy.FresnelWavefront(beam_radius=self.fsm_diam/2 * self.N/self.npix_fsm, npix=self.N, oversample=1)
+        self.fsm_oversample = self.fsm_diam.to_value(u.mm) / self.fsm_pupil_diam.to_value(u.mm)
+        self.Nfsm = int(np.round(self.npix * self.fsm_oversample ))
+        pwf = poppy.FresnelWavefront(beam_radius=self.fsm_diam/2, npix=self.Nfsm, oversample=1)
         FSM_AP = poppy.CircularAperture(radius=self.fsm_diam/2).get_transmission(pwf)
         self.FSM_TT_MODES = utils.create_zernike_modes(FSM_AP, nmodes=2, remove_modes=1) # define tip/tilt modes
         self.FSM = poppy.ArrayOpticalElement(
-            opd=xp.zeros((self.N, self.N)), 
+            opd=xp.zeros((self.Nfsm, self.Nfsm)), 
             transmission=FSM_AP, 
             pixelscale=self.fsm_pupil_diam/(self.npix*u.pix), 
             planetype=inter, 
             name='FSM (Pupil-ish)',
         )
 
-        self.GAP_MASK = self.PUPIL_MASK.get_transmission(poppy.FresnelWavefront(beam_radius=self.pupil_mask_diam/2, npix=self.npix, oversample=1))
+        self.DOPD = poppy.ArrayOpticalElement(
+            opd=xp.zeros((self.npix, self.npix)), 
+            pixelscale=self.pupil_diam/(self.npix*u.pix), 
+            planetype=inter, 
+            name='Dummy Pupil OPD',
+        )
+
+        self.GAP_MASK = self.EP.get_transmission(poppy.FresnelWavefront(beam_radius=self.pupil_diam/2, npix=self.npix, oversample=1))
         self.BAP_MASK = self.GAP_MASK>0
 
         # VORTEX MODELING PARAMETERS
@@ -217,7 +201,7 @@ class single():
         self.return_pupil = False
 
         self.source_offset = (0,0)
-        self.as_per_lamD = ((self.wavelength_c/(self.esc_pupil_diam*self.lyot_ratio))*u.radian).to(u.arcsec)
+        self.as_per_lamD = ((self.wavelength_c/(self.pupil_diam*self.lyot_ratio))*u.radian).to(u.arcsec)
 
         self.det_rotation = 0
 
@@ -236,8 +220,8 @@ class single():
             tt_vals[0] = tt_vals[0] * self.as_per_lamD.to_value(u.arcsec) # lamD * as/lamD
             tt_vals[1] = tt_vals[1] * self.as_per_lamD.to_value(u.arcsec) # lamD * as/lamD
 
-        tip_at_pupil_pv = np.tan(tt_vals[0]/self.as_per_radian) * self.esc_pupil_diam.to_value(u.m) * self.m4_pupil_ratio
-        tilt_at_pupil_pv = np.tan(tt_vals[1]/self.as_per_radian) * self.esc_pupil_diam.to_value(u.m) * self.m4_pupil_ratio
+        tip_at_pupil_pv = np.tan(tt_vals[0]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.m4_oversample
+        tilt_at_pupil_pv = np.tan(tt_vals[1]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.m4_oversample
         
         tip_at_pupil_rms = tip_at_pupil_pv * self.tt_pv_to_rms
         tilt_at_pupil_rms = tilt_at_pupil_pv * self.tt_pv_to_rms
@@ -252,8 +236,8 @@ class single():
             tt_vals[0] = tt_vals[0] * self.as_per_lamD.to_value(u.arcsec) # lamD * as/lamD
             tt_vals[1] = tt_vals[1] * self.as_per_lamD.to_value(u.arcsec) # lamD * as/lamD
 
-        tip_at_pupil_pv = np.tan(tt_vals[0]/self.as_per_radian) * self.esc_pupil_diam.to_value(u.m) * self.fsm_pupil_ratio
-        tilt_at_pupil_pv = np.tan(tt_vals[1]/self.as_per_radian) * self.esc_pupil_diam.to_value(u.m) * self.fsm_pupil_ratio
+        tip_at_pupil_pv = np.tan(tt_vals[0]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.fsm_oversample
+        tilt_at_pupil_pv = np.tan(tt_vals[1]/self.as_per_radian) * self.pupil_diam.to_value(u.m) * self.fsm_oversample
 
         tip_at_pupil_rms = tip_at_pupil_pv * self.tt_pv_to_rms
         tilt_at_pupil_rms = tilt_at_pupil_pv * self.tt_pv_to_rms
@@ -278,9 +262,9 @@ class single():
     
     def init_fosys(self):
 
-        fosys1 = poppy.FresnelOpticalSystem(pupil_diameter=self.esc_pupil_diam, npix=self.npix, beam_ratio=1/self.oversample, name='ESC to FPM')
-        fosys1.add_optic(self.FULL_EP)
-        fosys1.add_optic(self.FULL_OPD)
+        fosys1 = poppy.FresnelOpticalSystem(pupil_diameter=self.pupil_diam, npix=self.npix, beam_ratio=1/self.oversample, name='ESC to FPM')
+        fosys1.add_optic(self.EP)
+        fosys1.add_optic(self.DOPD)
         fosys1.add_optic(esc_optics.elements['m1'])
         if self.wfes.get('m1') is not None: fosys1.add_optic(self.wfes['m1'])
         fosys1.add_optic(esc_optics.elements['m2'], distance=esc_optics.distances['m1-m2'])
@@ -295,8 +279,7 @@ class single():
         if self.wfes.get('oap1') is not None: fosys1.add_optic(self.wfes['oap1'])
         fosys1.add_optic(esc_optics.elements['fm1'], distance=esc_optics.distances['oap1-fm1'])
         if self.wfes.get('fm1') is not None: fosys1.add_optic(self.wfes['fm1'])
-        # fosys1.add_optic(esc_optics.elements['pupil_mask'], distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
-        fosys1.add_optic(self.PUPIL_MASK, distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
+        fosys1.add_optic(esc_optics.elements['pupil_mask'], distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
         fosys1.add_optic(esc_optics.elements['oap2'], distance=esc_optics.distances['pupil_mask-oap2'] - self.pupil_mask_corr)
         if self.wfes.get('oap2') is not None: fosys1.add_optic(self.wfes['oap2'])
         fosys1.add_optic(esc_optics.elements['ifp1'], distance=esc_optics.distances['oap2-ifp1'] + self.ifp1_corr)
@@ -350,13 +333,10 @@ class single():
     
     def init_inwave(self):
         inwave = poppy.FresnelWavefront(
-            beam_radius=self.esc_pupil_diam/2, 
-            wavelength=self.wavelength,
-            npix=self.npix, 
-            oversample=self.oversample,
+            beam_radius=self.pupil_diam/2, wavelength=self.wavelength,
+            npix=self.npix, oversample=self.oversample,
         )
         
-        inwave.wavefront = xp.ones((self.N, self.N), dtype=xp.complex128)
         if np.abs(self.source_offset[0])>0 or np.abs(self.source_offset[1])>0:
             inwave.tilt(Xangle=self.source_offset[0]*self.as_per_lamD, Yangle=self.source_offset[1]*self.as_per_lamD)
 
@@ -384,25 +364,9 @@ class single():
                 npix=1*self.npix,
             )
 
-        fp_wf_hres = props.mft_forward(
-            vpup_wf, 
-            self.npix, 
-            self.N_vortex_hres, 
-            self.hres_sampling, 
-            convention='-', 
-            fp_centering='odd',
-            pp_centering='even',
-        )
+        fp_wf_hres = props.mft_forward(vpup_wf, self.npix, self.N_vortex_hres, self.hres_sampling, convention='-', fp_centering='odd')
         fp_wf_hres *= self.vortex_hres * self.hres_window * self.hres_dot_mask # apply high res (windowed) FPM
-        pupil_wf_hres = props.mft_reverse(
-            fp_wf_hres, 
-            self.hres_sampling, 
-            self.npix, 
-            self.N, 
-            convention='+', 
-            fp_centering='odd', 
-            pp_centering='even',
-        )
+        pupil_wf_hres = props.mft_reverse(fp_wf_hres, self.hres_sampling, self.npix, self.N, convention='+', fp_centering='odd')
         if self.plot_vortex: 
             imshows.imshow2(
                 xp.abs(pupil_wf_hres), xp.angle(pupil_wf_hres), 
@@ -545,9 +509,3 @@ class parallel():
         im = xp.mean(ims, axis=0)
 
         return im/self.Imax_ref
-
-
-
-
-
-
