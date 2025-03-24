@@ -1,4 +1,4 @@
-from . import  math_module, utils, esc_fresnel, dm
+from . import  esc_fresnel, math_module, utils, dm
 
 __version__ = '0.1.0'
 
