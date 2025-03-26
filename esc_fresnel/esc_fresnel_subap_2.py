@@ -99,8 +99,6 @@ class single():
         self.npix_full = int(np.round(self.npix * self.full_esc_ratio))
         self.FULL_EP = poppy.CircularAperture(
             radius=self.full_pupil_diam/2, 
-            shift_x=-9.746832E+02*u.mm,
-            shift_y=-1.666386E+03*u.mm,
             name='entrance_pupil', 
             planetype=pupil,
         )
@@ -279,7 +277,7 @@ class single():
     
     def init_fosys(self):
 
-        fosys1 = poppy.FresnelOpticalSystem(pupil_diameter=self.esc_pupil_diam, npix=self.npix, beam_ratio=1/self.oversample, name='ESC to FPM')
+        fosys1 = poppy.FresnelOpticalSystem(pupil_diameter=self.esc_pupil_diam, npix=self.npix, beam_ratio=1/self.oversample, name='Primary to Pupil Mask')
         fosys1.add_optic(self.FULL_EP)
         fosys1.add_optic(self.FULL_OPD)
         fosys1.add_optic(esc_optics.elements['m1'])
@@ -296,57 +294,59 @@ class single():
         if self.wfes.get('oap1') is not None: fosys1.add_optic(self.wfes['oap1'])
         fosys1.add_optic(esc_optics.elements['fm1'], distance=esc_optics.distances['oap1-fm1'])
         if self.wfes.get('fm1') is not None: fosys1.add_optic(self.wfes['fm1'])
-        # fosys1.add_optic(self.PUPIL_MASK, distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
-        fosys1.add_optic(self.PUPIL_MASK, distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
-        fosys1.add_optic(esc_optics.elements['oap2'], distance=esc_optics.distances['pupil_mask-oap2'] - self.pupil_mask_corr)
-        if self.wfes.get('oap2') is not None: fosys1.add_optic(self.wfes['oap2'])
-        fosys1.add_optic(esc_optics.elements['ifp1'], distance=esc_optics.distances['oap2-ifp1'] + self.ifp1_corr)
-        fosys1.add_optic(esc_optics.elements['oap3'], distance=esc_optics.distances['ifp1-oap3'] - self.ifp1_corr)
-        if self.wfes.get('oap3') is not None: fosys1.add_optic(self.wfes['oap3'])
-        fosys1.add_optic(self.FSM, distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
-        if self.wfes.get('fsm') is not None: fosys1.add_optic(self.wfes['fsm'])
-        fosys1.add_optic(esc_optics.elements['fm2'], distance=esc_optics.distances['fsm-fm2'] - self.fsm_corr)
-        if self.wfes.get('fm2') is not None: fosys1.add_optic(self.wfes['fm2'])
-        fosys1.add_optic(esc_optics.elements['oap4'], distance=esc_optics.distances['fm2-oap4'])
-        if self.wfes.get('oap4') is not None: fosys1.add_optic(self.wfes['oap4'])
-        fosys1.add_optic(esc_optics.elements['ifp2'], distance=esc_optics.distances['oap4-ifp2'] + self.ifp2_corr)
-        fosys1.add_optic(esc_optics.elements['oap5'], distance=esc_optics.distances['ifp2-oap5'] - self.ifp2_corr)
-        if self.wfes.get('oap5') is not None: fosys1.add_optic(self.wfes['oap5'])
-        fosys1.add_optic(self.DM, distance=esc_optics.distances['oap5-dm'] + self.dm_corr)
-        if self.wfes.get('DM') is not None: fosys1.add_optic(self.wfes['DM'])
-        fosys1.add_optic(esc_optics.elements['input_lp'], distance=esc_optics.distances['dm-input_lp'] - self.dm_corr)
-        if self.wfes.get('input_lp') is not None: fosys1.add_optic(self.wfes['input_lp'])
-        fosys1.add_optic(esc_optics.elements['input_qwp'], distance=esc_optics.distances['input_lp-input_qwp'])
-        if self.wfes.get('input_qwp') is not None: fosys1.add_optic(self.wfes['input_qwp'])
-        fosys1.add_optic(esc_optics.elements['oap6'], distance=esc_optics.distances['input_qwp-oap6'])
-        if self.wfes.get('oap6') is not None: fosys1.add_optic(self.wfes['oap6'])
-        fosys1.add_optic(esc_optics.elements['fpm'], distance=esc_optics.distances['oap6-fpm'] + self.fpm_corr)
+        fosys1.add_optic(poppy.ScalarTransmission(name='Pupil Mask Plane'), distance=esc_optics.distances['fm1-pupil_mask'] + self.pupil_mask_corr)
 
-        fosys2 = poppy.FresnelOpticalSystem(npix=self.npix, beam_ratio=1/self.oversample, name='ESC Post-FPM')
-        fosys2.add_optic(poppy.ScalarTransmission(name='Post FPM WF'))
-        fosys2.add_optic(esc_optics.elements['oap7'], distance=esc_optics.distances['fpm-oap7'] - self.fpm_corr)
+        fosys2 = poppy.FresnelOpticalSystem(pupil_diameter=self.pupil_mask_diam, npix=self.npix, beam_ratio=1/self.oversample, name='Pupil Mask to FPM')
+        fosys2.add_optic(self.PUPIL_MASK)
+        fosys2.add_optic(esc_optics.elements['oap2'], distance=esc_optics.distances['pupil_mask-oap2'] - self.pupil_mask_corr)
+        if self.wfes.get('oap2') is not None: fosys1.add_optic(self.wfes['oap2'])
+        fosys2.add_optic(esc_optics.elements['ifp1'], distance=esc_optics.distances['oap2-ifp1'] + self.ifp1_corr)
+        fosys2.add_optic(esc_optics.elements['oap3'], distance=esc_optics.distances['ifp1-oap3'] - self.ifp1_corr)
+        if self.wfes.get('oap3') is not None: fosys1.add_optic(self.wfes['oap3'])
+        fosys2.add_optic(self.FSM, distance=esc_optics.distances['oap3-fsm'] + self.fsm_corr)
+        if self.wfes.get('fsm') is not None: fosys1.add_optic(self.wfes['fsm'])
+        fosys2.add_optic(esc_optics.elements['fm2'], distance=esc_optics.distances['fsm-fm2'] - self.fsm_corr)
+        if self.wfes.get('fm2') is not None: fosys1.add_optic(self.wfes['fm2'])
+        fosys2.add_optic(esc_optics.elements['oap4'], distance=esc_optics.distances['fm2-oap4'])
+        if self.wfes.get('oap4') is not None: fosys1.add_optic(self.wfes['oap4'])
+        fosys2.add_optic(esc_optics.elements['ifp2'], distance=esc_optics.distances['oap4-ifp2'] + self.ifp2_corr)
+        fosys2.add_optic(esc_optics.elements['oap5'], distance=esc_optics.distances['ifp2-oap5'] - self.ifp2_corr)
+        if self.wfes.get('oap5') is not None: fosys1.add_optic(self.wfes['oap5'])
+        fosys2.add_optic(self.DM, distance=esc_optics.distances['oap5-dm'] + self.dm_corr)
+        if self.wfes.get('DM') is not None: fosys1.add_optic(self.wfes['DM'])
+        fosys2.add_optic(esc_optics.elements['input_lp'], distance=esc_optics.distances['dm-input_lp'] - self.dm_corr)
+        if self.wfes.get('input_lp') is not None: fosys1.add_optic(self.wfes['input_lp'])
+        fosys2.add_optic(esc_optics.elements['input_qwp'], distance=esc_optics.distances['input_lp-input_qwp'])
+        if self.wfes.get('input_qwp') is not None: fosys1.add_optic(self.wfes['input_qwp'])
+        fosys2.add_optic(esc_optics.elements['oap6'], distance=esc_optics.distances['input_qwp-oap6'])
+        if self.wfes.get('oap6') is not None: fosys1.add_optic(self.wfes['oap6'])
+        fosys2.add_optic(esc_optics.elements['fpm'], distance=esc_optics.distances['oap6-fpm'] + self.fpm_corr)
+
+        fosys3 = poppy.FresnelOpticalSystem(npix=self.npix, beam_ratio=1/self.oversample, name='ESC Post-FPM')
+        fosys3.add_optic(poppy.ScalarTransmission(name='Post FPM WF'))
+        fosys3.add_optic(esc_optics.elements['oap7'], distance=esc_optics.distances['fpm-oap7'] - self.fpm_corr)
         if self.wfes.get('oap7') is not None: fosys2.add_optic(self.wfes['oap7'])
-        fosys2.add_optic(esc_optics.elements['lyot_plane'], distance=esc_optics.distances['oap7-lyot'] + self.lyot_corr)
+        fosys3.add_optic(esc_optics.elements['lyot_plane'], distance=esc_optics.distances['oap7-lyot'] + self.lyot_corr)
         if self.return_pupil:
             return fosys1, fosys2
         if self.use_lyot: fosys2.add_optic(self.LYOT)
-        fosys2.add_optic(esc_optics.elements['oap9'], distance=esc_optics.distances['lyot-oap9'] - self.lyot_corr)
+        fosys3.add_optic(esc_optics.elements['oap9'], distance=esc_optics.distances['lyot-oap9'] - self.lyot_corr)
         if self.wfes.get('oap9') is not None: fosys2.add_optic(self.wfes['oap9'])
-        fosys2.add_optic(esc_optics.elements['fieldstop'], distance=esc_optics.distances['oap9-fieldstop'] + self.fieldstop_corr)
-        fosys2.add_optic(esc_optics.elements['collimator'], distance=esc_optics.distances['fieldstop-collimator'] - self.fieldstop_corr)
+        fosys3.add_optic(esc_optics.elements['fieldstop'], distance=esc_optics.distances['oap9-fieldstop'] + self.fieldstop_corr)
+        fosys3.add_optic(esc_optics.elements['collimator'], distance=esc_optics.distances['fieldstop-collimator'] - self.fieldstop_corr)
         if self.wfes.get('collimator') is not None: fosys2.add_optic(self.wfes['collimator'])
-        fosys2.add_optic(esc_optics.elements['filter'], distance=esc_optics.distances['collimator-filter'])
+        fosys3.add_optic(esc_optics.elements['filter'], distance=esc_optics.distances['collimator-filter'])
         if self.wfes.get('filter') is not None: fosys2.add_optic(self.wfes['filter'])
-        fosys2.add_optic(esc_optics.elements['output_qwp'], distance=esc_optics.distances['filter-output_qwp'])
+        fosys3.add_optic(esc_optics.elements['output_qwp'], distance=esc_optics.distances['filter-output_qwp'])
         if self.wfes.get('output_qwp') is not None: fosys2.add_optic(self.wfes['output_qwp'])
-        fosys2.add_optic(esc_optics.elements['output_lp'], distance=esc_optics.distances['output_qwp-output_lp'])
+        fosys3.add_optic(esc_optics.elements['output_lp'], distance=esc_optics.distances['output_qwp-output_lp'])
         if self.wfes.get('output_lp') is not None: fosys2.add_optic(self.wfes['output_lp'])
-        fosys2.add_optic(esc_optics.elements['oap10'], distance=esc_optics.distances['output_lp-oap10'])
+        fosys3.add_optic(esc_optics.elements['oap10'], distance=esc_optics.distances['output_lp-oap10'])
         if self.wfes.get('oap10') is not None: fosys2.add_optic(self.wfes['oap10'])
-        fosys2.add_optic(poppy.Rotation(self.det_rotation, units='degrees'))
-        fosys2.add_optic(poppy.Detector(pixelscale=self.camsci_pxscl, fov_pixels=self.npsf, interp_order=3, name='   camsci (fp)',), distance=esc_optics.distances['oap10-scicam'] + self.scicam_corr)
+        fosys3.add_optic(poppy.Rotation(self.det_rotation, units='degrees'))
+        fosys3.add_optic(poppy.Detector(pixelscale=self.camsci_pxscl, fov_pixels=self.npsf, interp_order=3, name='   camsci (fp)',), distance=esc_optics.distances['oap10-scicam'] + self.scicam_corr)
 
-        return fosys1, fosys2
+        return fosys1, fosys2, fosys3
     
     def init_inwave(self):
         inwave = poppy.FresnelWavefront(
@@ -424,15 +424,21 @@ class single():
 
     def calc_wfs(self, quiet=False):
         self.return_pupil = False
-        fosys_to_fpm, fosys_to_scicam = self.init_fosys()
+        fosys_to_pupil_mask, fosys_to_fpm, fosys_to_scicam = self.init_fosys()
         ep_inwave = self.init_inwave()
-        _, wfs_to_fpm = fosys_to_fpm.calc_psf(inwave=ep_inwave, normalize='none', return_intermediates=True)
+
+        wfs_to_pupil_mask = fosys_to_pupil_mask.calc_psf(inwave=ep_inwave, normalize='none', return_intermediates=True)
+        pupil_mask_inwave = copy.copy(wfs_to_pupil_mask[-1])
+
+        _, wfs_to_fpm = fosys_to_fpm.calc_psf(inwave=pupil_mask_inwave, normalize='none', return_intermediates=True)
         fpm_inwave = copy.copy(wfs_to_fpm[-1])
         if self.use_vortex: 
             post_fpm_wf = self.apply_vortex(copy.copy(fpm_inwave.wavefront))
             fpm_inwave.wavefront = copy.copy(post_fpm_wf)
+
         _, wfs_to_scicam = fosys_to_scicam.calc_psf(inwave=fpm_inwave, normalize='none', return_intermediates=True)
-        all_wfs = wfs_to_fpm + wfs_to_scicam
+
+        all_wfs = wfs_to_pupil_mask + wfs_to_fpm + wfs_to_scicam
         return all_wfs
     
     def calc_wf(self): 

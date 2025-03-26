@@ -78,7 +78,8 @@ diams = {
     'm1': (6.50 *u.m, 1.38*u.m), # M1 is a tuple because it has an inner and outer diameter
     'm2': 2 * 3.573626217651691E+002 *u.mm, 
     'm3': (2 * 350*u.mm, 2 * 270 *u.mm), # M3 is a tuple because it is a rectangle with different dimensions along x and y
-    'm4': 2 * 4.816942571704584E+001 *u.mm, 
+    # 'm4': 2 * 4.816942571704584E+001 *u.mm, 
+    'm4': 90 *u.mm, 
     'oap1':  50.8*u.mm, 
     'fm1': 50.8*u.mm, 
     'pupil_mask': 14*u.mm, 
