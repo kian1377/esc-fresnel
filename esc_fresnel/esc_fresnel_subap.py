@@ -391,7 +391,7 @@ class single():
             self.hres_sampling, 
             convention='-', 
             fp_centering='odd',
-            pp_centering='even',
+            pp_centering='odd',
         )
         fp_wf_hres *= self.vortex_hres * self.hres_window * self.hres_dot_mask # apply high res (windowed) FPM
         pupil_wf_hres = props.mft_reverse(
@@ -401,7 +401,7 @@ class single():
             self.N, 
             convention='+', 
             fp_centering='odd', 
-            pp_centering='even',
+            pp_centering='odd',
         )
         if self.plot_vortex: 
             imshows.imshow2(
