@@ -95,6 +95,7 @@ def imshow(
         pxscls=[],
         npix=[],
         cmaps=[],
+        show_cbars=[],
         norms=[],
         cbar_labels=[],
         grids=[],
@@ -119,6 +120,7 @@ def imshow(
     xlabel_pads.extend([None] * (Nax - len(xlabel_pads)))
     ylabel_pads.extend([None] * (Nax - len(ylabel_pads)))
     cmaps.extend(['magma'] * (Nax - len(cmaps)))
+    show_cbars.extend([True] * (Nax - len(show_cbars)))
     norms.extend([None] * (Nax - len(norms)))
     cbar_labels.extend([None] * (Nax - len(cbar_labels)))
     grids.extend([None] * (Nax - len(grids)))
@@ -141,7 +143,8 @@ def imshow(
     if Nrows==1 and Ncols is None:
         Ncols = Nax
     fig, axs = plt.subplots(nrows=Nrows, ncols=Ncols, figsize=figsize, dpi=dpi)
-    print(np.ndim(axs))
+    # print(np.ndim(axs))
+    # print(show_cbars)
 
     row_ind = 0
     col_ind = 0
@@ -155,6 +158,8 @@ def imshow(
         xlabel_pad = xlabel_pads[i]
         ylabel_pad = ylabel_pads[i]
         cmap = cmaps[i]
+        show_cbar = show_cbars[i]
+        print(show_cbar)
         norm = norms[i]
         cbar_label = cbar_labels[i]
         xtick = xticks[i]
@@ -190,10 +195,11 @@ def imshow(
         if patches is not None: 
             for patch in patches:
                 ax.add_patch(patch)
-        divider = make_axes_locatable(ax)
-        cax = divider.append_axes("right", size="4%", pad=0.075)
-        cbar = fig.colorbar(im, cax=cax)
-        cbar.ax.set_ylabel(cbar_label, rotation=0, labelpad=7)
+        if show_cbar:
+            divider = make_axes_locatable(ax)
+            cax = divider.append_axes("right", size="4%", pad=0.075)
+            cbar = fig.colorbar(im, cax=cax)
+            cbar.ax.set_ylabel(cbar_label, rotation=0, labelpad=7)
     
     plt.subplots_adjust(wspace=wspace, hspace=hspace)
     plt.close()
