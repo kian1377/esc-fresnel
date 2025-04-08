@@ -123,7 +123,7 @@ def imshow(
     show_cbars.extend([True] * (Nax - len(show_cbars)))
     norms.extend([None] * (Nax - len(norms)))
     cbar_labels.extend([None] * (Nax - len(cbar_labels)))
-    grids.extend([None] * (Nax - len(grids)))
+    grids.extend([False] * (Nax - len(grids)))
     xticks.extend([None] * (Nax - len(xticks)))
     yticks.extend([None] * (Nax - len(yticks)))
     pxscls.extend([None] * (Nax - len(pxscls)))
@@ -159,7 +159,7 @@ def imshow(
         ylabel_pad = ylabel_pads[i]
         cmap = cmaps[i]
         show_cbar = show_cbars[i]
-        print(show_cbar)
+        # print(show_cbar)
         norm = norms[i]
         cbar_label = cbar_labels[i]
         xtick = xticks[i]
@@ -191,7 +191,7 @@ def imshow(
         ax.set_ylabel(ylabel, fontsize=label_fz, labelpad=ylabel_pad)
         if xtick is not None: ax.set_xticks(xtick)
         if ytick is not None: ax.set_yticks(ytick)
-        if grid is not None: ax.grid()
+        if grid: ax.grid()
         if patches is not None: 
             for patch in patches:
                 ax.add_patch(patch)
