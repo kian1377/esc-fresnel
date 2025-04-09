@@ -270,7 +270,7 @@ elements = {
 
 zemax_footprint_diams = {
     'pupil_mask_x': 2* 6.37*u.mm,
-    'pupil_mask_y': 2* 6.37*u.mm,
+    'pupil_mask_y': 2* 6.35*u.mm,
     'FSM_x': 2*4.763*u.mm,
     'FSM_y': 2*4.63*u.mm,
     'DM_x': 2*4.729*u.mm,
