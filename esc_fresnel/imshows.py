@@ -410,11 +410,11 @@ def imshow3(
     if return_fig: return fig,ax
     
 
-
 def plot_data_with_ref(
         data, 
         im1vmin=1e-9, im1vmax=1e-4,
         im2vmin=1e-9, im2vmax=1e-4, 
+        imticks=None, 
         vmin=1e-9, vmax=1e-4, 
         xticks=None,
         exp_name='',
@@ -438,7 +438,9 @@ def plot_data_with_ref(
 
     w = 0.225
     im1 = ax[0].imshow(ref_im, norm=LogNorm(vmax=im1vmax, vmin=im1vmin), cmap='magma', extent=extent)
-    ax[0].set_title(f'Initial Image:\nMean Contrast = {mean_nis[0]:.2e}', fontsize=14)
+    ax[0].set_title(f'Initial Image:\nContrast = {mean_nis[0]:.2e}', fontsize=12)
+    ax[0].set_xticks(imticks)
+    ax[0].set_yticks(imticks)
     divider = make_axes_locatable(ax[0])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im1, cax=cax)
@@ -446,22 +448,24 @@ def plot_data_with_ref(
     ax[0].set_position([0, 0, w, w]) # [left, bottom, width, height]
 
     im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
-    ax[1].set_title('Best Iteration' + exp_name + f':\nMean Contrast = {mean_nis[ibest]:.2e}', fontsize=14)
+    ax[1].set_title('Best Iteration' + exp_name + f':\nContrast = {mean_nis[ibest]:.2e}', fontsize=12)
+    # ax[1].set_xticks(imticks)
+    # ax[1].set_yticks(imticks)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im2, cax=cax,)
     cbar.ax.set_ylabel('NI', rotation=0, labelpad=7)
     ax[1].set_position([0.23, 0, w, w])
 
-    ax[0].set_ylabel('Y [$\lambda/D$]', fontsize=12, labelpad=-5)
-    ax[0].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
-    ax[1].set_xlabel('X [$\lambda/D$]', fontsize=12, labelpad=5)
+    ax[0].set_ylabel('Y [$\lambda/D$]', fontsize=10, labelpad=-5)
+    ax[0].set_xlabel('X [$\lambda/D$]', fontsize=10, labelpad=5)
+    ax[1].set_xlabel('X [$\lambda/D$]', fontsize=10, labelpad=5)
 
     ax[2].set_title('Mean Contrast per Iteration' + exp_name, fontsize=14)
-    ax[2].semilogy(mean_nis, label='3.6% Bandpass')
+    ax[2].semilogy(mean_nis,)
     ax[2].grid()
     ax[2].set_xlabel('Iteration Number', fontsize=12, )
-    ax[2].set_ylabel('Mean Contrast', fontsize=14, labelpad=1)
+    ax[2].set_ylabel('Contrast', fontsize=14, labelpad=1)
     ax[2].set_ylim([vmin, vmax])
     xticks = np.arange(0,Nitr,2) if xticks is None else xticks
     ax[2].set_xticks(xticks)
