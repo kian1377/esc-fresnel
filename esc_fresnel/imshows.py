@@ -449,8 +449,8 @@ def plot_data_with_ref(
 
     im2 = ax[1].imshow( best_im, norm=LogNorm(vmax=im2vmax, vmin=im2vmin), cmap='magma', extent=extent)
     ax[1].set_title('Best Iteration' + exp_name + f':\nContrast = {mean_nis[ibest]:.2e}', fontsize=12)
-    # ax[1].set_xticks(imticks)
-    # ax[1].set_yticks(imticks)
+    ax[1].set_xticks(imticks)
+    ax[1].set_yticks(imticks)
     divider = make_axes_locatable(ax[1])
     cax = divider.append_axes("right", size="4%", pad=0.075)
     cbar = fig.colorbar(im2, cax=cax,)
