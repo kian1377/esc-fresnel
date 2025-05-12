@@ -22,7 +22,7 @@ def ang_spec(wavefront, wavelength, distance, pixelscale):
     delkx = 2*np.pi/(n*pixelscale)
     kxy = (xp.linspace(-n/2, n/2-1, n) + 1/2)*delkx
     k = 2*np.pi/wavelength
-    kx, ky = xp.meshgrid(kxy,kxy)
+    kx, ky = xp.meshgrid(kxy, kxy)
 
     wf_as = xp.fft.ifftshift(xp.fft.fft2(xp.fft.fftshift(wavefront)))
     
