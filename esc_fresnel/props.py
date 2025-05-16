@@ -58,6 +58,7 @@ def mft_forward(wavefront, npix, npsf, psf_pixelscale_lamD, convention='-', pp_c
     else:
         My = xp.exp(1j*2*np.pi*vy) 
         Mx = xp.exp(1j*2*np.pi*xu)
+    # print(Mx.shape, My.shape)
 
     norm_coeff = psf_pixelscale_lamD/npix
 

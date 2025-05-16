@@ -35,6 +35,9 @@ class single():
         self.wavelength = wavelength
 
         self.full_pupil_diam = 6.5*u.m
+        self.full_pupil_shift_x = -9.746832E+02*u.mm
+        self.full_pupil_shift_y = -1.666386E+03*u.mm
+        self.secondary_diam = 1.38*u.m
         self.esc_pupil_diam = 2.43 * u.m
         self.lyot_stop_diam = 3.7 * u.mm
         self.wavelength_c = 650e-9 * u.m
@@ -97,10 +100,29 @@ class single():
 
         self.full_esc_ratio = self.full_pupil_diam.to_value(u.mm) / self.esc_pupil_diam.to_value(u.mm)
         self.npix_full = int(np.round(self.npix * self.full_esc_ratio))
-        self.FULL_EP = poppy.CircularAperture(
-            radius=self.full_pupil_diam/2, 
-            shift_x=-9.746832E+02*u.mm,
-            shift_y=-1.666386E+03*u.mm,
+        # self.FULL_EP = poppy.CircularAperture(
+        #     radius=self.full_pupil_diam/2, 
+        #     shift_x=-9.746832E+02*u.mm,
+        #     shift_y=-1.666386E+03*u.mm,
+        #     name='entrance_pupil', 
+        #     planetype=pupil,
+        # )
+
+        self.FULL_EP = poppy.CompoundAnalyticOptic(
+            [poppy.CircularAperture(
+                radius=self.full_pupil_diam/2,
+                shift_x=-9.746832E+02*u.mm,
+                shift_y=-1.666386E+03*u.mm,
+             ),
+            poppy.SecondaryObscuration( 
+                secondary_radius=self.secondary_diam/2, 
+                n_supports=3, 
+                support_width=150*u.mm, 
+                support_angle_offset=120,
+                shift_x=-9.746832E+02*u.mm,
+                shift_y=-1.666386E+03*u.mm,
+             )
+            ],
             name='entrance_pupil', 
             planetype=pupil,
         )
