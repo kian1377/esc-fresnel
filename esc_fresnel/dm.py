@@ -59,7 +59,7 @@ class DeformableMirror(poppy.AnalyticOpticalElement):
         self.Mx_back = xp.exp(1j*2*np.pi*xp.outer(x,fx)) # adjoint DM model MFT matrices
         self.My_back = xp.exp(1j*2*np.pi*xp.outer(fy,y))
 
-        self.dm_channels = xp.zeros((10,34,34))
+        self.dm_channels = xp.zeros((10,Nact,Nact))
         self.total_command = xp.sum(self.dm_channels, axis=0)
 
         self.pxscl_tol = 1e-6
@@ -75,7 +75,7 @@ class DeformableMirror(poppy.AnalyticOpticalElement):
         self.total_command = xp.sum(self.dm_channels, axis=0)
 
     def zero_all_channels(self,):
-        self.dm_channels = xp.zeros((10,34,34))
+        self.dm_channels = xp.zeros((10,self.Nact,self.Nact))
         self.total_command = xp.sum(self.dm_channels, axis=0)
 
     def get_command(self, channel=1):

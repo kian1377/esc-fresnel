@@ -28,7 +28,8 @@ class single():
             npix=1000, 
             oversample=4.096, 
             npsf=300,
-            dm_ref=xp.zeros((34,34)),
+            dm_choice=1,
+            dm_ref=None,
             use_corrections=True,
         ):
         
@@ -215,12 +216,19 @@ class single():
             3. Add post-FPM low orders from Zemax
         '''
 
-        self.Nact = 34
-        act_spacing = 300e-6*u.m
+        if dm_choice==1:
+            self.Nact = 34
+            self.act_spacing = 300e-6*u.m
+        elif dm_choice==2:
+            self.Nact = 48
+            self.act_spacing = 300e-6*u.m * 34/48
+        elif dm_choice==3:
+            self.Nact = 64
+            self.act_spacing = 300e-6*u.m * 34/64
         self.dm_pxscl = self.dm_pupil_diam.to_value(u.m)/self.npix
-        inf_sampling = act_spacing.to_value(u.m)/self.dm_pxscl
+        inf_sampling = self.act_spacing.to_value(u.m)/self.dm_pxscl
         inf_fun = utils.make_gaussian_inf_fun(
-            act_spacing=act_spacing.to_value(u.m), 
+            act_spacing=self.act_spacing.to_value(u.m), 
             sampling=inf_sampling, 
             coupling=0.15, 
             Nact=self.Nact+2,
@@ -229,13 +237,15 @@ class single():
         self.DM = dm.DeformableMirror(
             inf_fun=inf_fun, 
             inf_sampling=inf_sampling, 
+            Nact=self.Nact,
+            act_spacing=self.act_spacing,
             name='DM (pupil)',
         )
 
         self.dm_mask = self.DM.dm_mask
         self.Nacts = self.DM.Nacts
-        self.dm_ref = dm_ref
-        self.set_dm(dm_ref, channel=0)
+        self.dm_ref = dm_ref if dm_ref is not None else xp.zeros((self.Nact,self.Nact))
+        self.set_dm(self.dm_ref, channel=0)
 
         self.return_pupil = False
 
