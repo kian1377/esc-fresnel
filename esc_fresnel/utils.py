@@ -10,7 +10,7 @@ import pickle
 import matplotlib.pyplot as plt
 plt.rcParams['image.origin'] = 'lower'
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.patches import Circle, Rectangle
+from matplotlib.colors import LogNorm, Normalize, CenteredNorm
 from IPython.display import display, clear_output
 
 def mean(array, mask=None):
@@ -76,13 +76,6 @@ def load_pickle(fpath):
     infile.close()
     return pkl_data  
 
-
-import matplotlib.pyplot as plt
-plt.rcParams['image.origin'] = 'lower'
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.colors import LogNorm, Normalize, CenteredNorm
-from IPython.display import display, clear_output
-
 def imshow(
         arrs,
         titles=[], 
@@ -95,9 +88,11 @@ def imshow(
         pxscls=[],
         npix=[],
         cmaps=[],
-        show_cbars=[],
         norms=[],
+        show_cbars=[],
         cbar_labels=[],
+        cbar_label_rots=[],
+        cbar_label_pads=[],
         grids=[],
         xticks=[],
         yticks=[], 
@@ -120,10 +115,12 @@ def imshow(
     xlabel_pads.extend([None] * (Nax - len(xlabel_pads)))
     ylabel_pads.extend([None] * (Nax - len(ylabel_pads)))
     cmaps.extend(['magma'] * (Nax - len(cmaps)))
-    show_cbars.extend([True] * (Nax - len(show_cbars)))
     norms.extend([None] * (Nax - len(norms)))
+    show_cbars.extend([True] * (Nax - len(show_cbars)))
     cbar_labels.extend([None] * (Nax - len(cbar_labels)))
-    grids.extend([False] * (Nax - len(grids)))
+    cbar_label_rots.extend([0] * (Nax - len(cbar_label_rots)))
+    cbar_label_pads.extend([7] * (Nax - len(cbar_label_pads)))
+    grids.extend([None] * (Nax - len(grids)))
     xticks.extend([None] * (Nax - len(xticks)))
     yticks.extend([None] * (Nax - len(yticks)))
     pxscls.extend([None] * (Nax - len(pxscls)))
@@ -136,15 +133,13 @@ def imshow(
         elif Nax==2:
             figsize = (10,4)
         elif Nax==3:
-            figsize = (15,7)
+            figsize = (16,4)
         else:
             figsize = (10,10)
     
     if Nrows==1 and Ncols is None:
         Ncols = Nax
     fig, axs = plt.subplots(nrows=Nrows, ncols=Ncols, figsize=figsize, dpi=dpi)
-    # print(np.ndim(axs))
-    # print(show_cbars)
 
     row_ind = 0
     col_ind = 0
@@ -158,10 +153,11 @@ def imshow(
         xlabel_pad = xlabel_pads[i]
         ylabel_pad = ylabel_pads[i]
         cmap = cmaps[i]
-        show_cbar = show_cbars[i]
-        # print(show_cbar)
         norm = norms[i]
+        show_cbar = show_cbars[i]
         cbar_label = cbar_labels[i]
+        cbar_label_rot = cbar_label_rots[i]
+        cbar_label_pad = cbar_label_pads[i]
         xtick = xticks[i]
         ytick = yticks[i]
         pxscl = pxscls[i]
@@ -191,7 +187,7 @@ def imshow(
         ax.set_ylabel(ylabel, fontsize=label_fz, labelpad=ylabel_pad)
         if xtick is not None: ax.set_xticks(xtick)
         if ytick is not None: ax.set_yticks(ytick)
-        if grid: ax.grid()
+        if grid is not None: ax.grid()
         if patches is not None: 
             for patch in patches:
                 ax.add_patch(patch)
@@ -199,7 +195,7 @@ def imshow(
             divider = make_axes_locatable(ax)
             cax = divider.append_axes("right", size="4%", pad=0.075)
             cbar = fig.colorbar(im, cax=cax)
-            cbar.ax.set_ylabel(cbar_label, rotation=0, labelpad=7)
+            cbar.ax.set_ylabel(cbar_label, rotation=cbar_label_rot, labelpad=cbar_label_pad)
     
     plt.subplots_adjust(wspace=wspace, hspace=hspace)
     plt.close()
