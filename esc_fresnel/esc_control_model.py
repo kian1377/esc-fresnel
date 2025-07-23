@@ -341,6 +341,10 @@ def val_and_grad(
     psf_pixelscale_lamD = M.psf_pixelscale_lamDc * M.wavelength_c/wavelength
     dJ_dE_LS = props.mft_reverse(dJ_ddeltaE, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
     if plot: utils.imshow([xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS)], titles=['dJ_dE_LS'], npix=2*[1.5*M.npix], cmaps=['plasma','twilight'])
+    
+    if M.exit_pupil_prop_distance is not None:
+        dJ_dE_LS = props.ang_spec(dJ_dE_LS, wavelength, -M.exit_pupil_prop_distance, M.lyot_pxscl)
+        if plot: utils.imshow([xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS)], titles=['dJ_dE_LS'], npix=2*[1.5*M.npix], cmaps=['plasma','twilight'])
 
     dJ_dE_LP = dJ_dE_LS * utils.pad_or_crop(M.LYOT, M.N)
     if M.flip_lyot: dJ_dE_LP = xp.fliplr(dJ_dE_LP)

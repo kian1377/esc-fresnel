@@ -261,6 +261,7 @@ elements = {
     'oap9': poppy.QuadraticLens(f_lens=apparent_fls['oap9'], name='oap9', planetype=inter),
     'fieldstop': poppy.ScalarTransmission(name='fieldstop (ifp3)', planetype=inter),
     'collimator': poppy.QuadraticLens(f_lens=apparent_fls['collimator'], name='collimator', planetype=inter),
+    'exit_pupil': poppy.ScalarTransmission(name='exit_pupil', planetype=inter),
     'filter': poppy.ScalarTransmission(name='filter', planetype=inter),
     'output_qwp': poppy.CircularAperture(radius=25.4*u.mm/2, name='output_qwp', planetype=inter),
     'output_lp': poppy.CircularAperture(radius=25.4*u.mm/2, name='output_lp', planetype=inter),

@@ -54,6 +54,8 @@ class single():
         self.final_pupil_diam = 3.9930329934638595 * u.mm
         self.final_fl = esc_optics.apparent_fls['oap10']
         self.fpm_fl = esc_optics.apparent_fls['oap6']
+
+        self.d_collimator_exit_pupil = 200*u.mm
         
         self.lyot_ratio = (self.lyot_stop_diam / self.lyot_pupil_diam).decompose().value
         self.lyot_to_final_mag = self.final_pupil_diam / self.lyot_pupil_diam
@@ -367,8 +369,14 @@ class single():
         fosys2.add_optic(esc_optics.elements['fieldstop'], distance=esc_optics.distances['oap9-fieldstop'] + self.fieldstop_corr)
         fosys2.add_optic(esc_optics.elements['collimator'], distance=esc_optics.distances['fieldstop-collimator'] - self.fieldstop_corr)
         if self.wfes.get('collimator') is not None: fosys2.add_optic(self.wfes['collimator'])
-        fosys2.add_optic(esc_optics.elements['filter'], distance=esc_optics.distances['collimator-filter'])
+
+        fosys2.add_optic(esc_optics.elements['exit_pupil'], distance=self.d_collimator_exit_pupil)
+        fosys2.add_optic(esc_optics.elements['filter'], distance=esc_optics.distances['collimator-filter'] - self.d_collimator_exit_pupil)
         if self.wfes.get('filter') is not None: fosys2.add_optic(self.wfes['filter'])
+
+        # fosys2.add_optic(esc_optics.elements['filter'], distance=esc_optics.distances['collimator-filter'])
+        # if self.wfes.get('filter') is not None: fosys2.add_optic(self.wfes['filter'])
+
         fosys2.add_optic(esc_optics.elements['output_qwp'], distance=esc_optics.distances['filter-output_qwp'])
         if self.wfes.get('output_qwp') is not None: fosys2.add_optic(self.wfes['output_qwp'])
         fosys2.add_optic(esc_optics.elements['output_lp'], distance=esc_optics.distances['output_qwp-output_lp'])

@@ -42,13 +42,13 @@ def run(I,
         E_ab = I.calc_wf()
         
         current_acts = total_command[M.dm_mask]
-        E_FP_NOM = M.forward(current_acts, I.wavelength_c, use_vortex=True, return_ints=False)
+        E_FP_NOM = M.forward(current_acts, M.wavelength_c, use_vortex=True, return_ints=False)
         rmad_vars= {
             'E_ab': E_ab,
             'current_acts': current_acts,
             'E_FP_NOM': E_FP_NOM,
             'control_mask': control_mask,
-            'wavelength':I.wavelength_c,
+            'wavelength':M.wavelength_c,
             'r_cond': reg_cond, 
         }
 
@@ -87,7 +87,7 @@ def run(I,
             norms=[Normalize(vmin=-xp.max(xp.abs(del_command)), vmax=xp.max(xp.abs(del_command))), 
                    Normalize(vmin=-xp.max(xp.abs(total_command)), vmax=xp.max(xp.abs(total_command)),), 
                    LogNorm(vmin=vmin)],
-            pxscls=[None, None, I.psf_pixelscale_lamDc], 
+            pxscls=[None, None, M.psf_pixelscale_lamDc], 
         )
 
     return data
