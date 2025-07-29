@@ -55,7 +55,7 @@ class single():
         self.final_fl = esc_optics.apparent_fls['oap10']
         self.fpm_fl = esc_optics.apparent_fls['oap6']
 
-        self.d_collimator_exit_pupil = 200*u.mm
+        self.d_collimator_exit_pupil = 203.75*u.mm
         
         self.lyot_ratio = (self.lyot_stop_diam / self.lyot_pupil_diam).decompose().value
         self.lyot_to_final_mag = self.final_pupil_diam / self.lyot_pupil_diam

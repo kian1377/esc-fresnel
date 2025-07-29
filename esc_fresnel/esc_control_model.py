@@ -208,7 +208,7 @@ class MODEL():
             if plot: utils.imshow(xp.abs(E_LS), xp.angle(E_LS), titles=['Lyot WF after propagation'], npix=2*[1.5*self.npix], cmaps=['plasma','twilight'])
 
         psf_pixelscale_lamD = self.psf_pixelscale_lamDc * self.wavelength_c/wavelength
-        E_FP = props.mft_forward(E_LS, self.npix * self.lyot_ratio, self.npsf, psf_pixelscale_lamD)
+        E_FP = props.mft_forward(E_LS, self.npix * self.lyot_ratio, self.npsf, psf_pixelscale_lamD, convention='+')
         if plot: utils.imshow([xp.abs(E_FP)**2, xp.angle(E_FP)], titles=['At Camera WF'], cmaps=['magma','twilight'], norms=[LogNorm()])
 
         if fancy_plot: 
@@ -339,7 +339,7 @@ def val_and_grad(
     if plot: utils.imshow([xp.abs(dJ_ddeltaE)**2, xp.angle(dJ_ddeltaE)], titles=['dJ_ddelta_E'], cmaps=['magma', 'twilight'], norms=[LogNorm(vmin=xp.max(xp.abs(dJ_ddeltaE)**2)/1e3)])
 
     psf_pixelscale_lamD = M.psf_pixelscale_lamDc * M.wavelength_c/wavelength
-    dJ_dE_LS = props.mft_reverse(dJ_ddeltaE, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='+')
+    dJ_dE_LS = props.mft_reverse(dJ_ddeltaE, psf_pixelscale_lamD, M.npix * M.lyot_ratio, M.N, convention='-')
     if plot: utils.imshow([xp.abs(dJ_dE_LS), xp.angle(dJ_dE_LS)], titles=['dJ_dE_LS'], npix=2*[1.5*M.npix], cmaps=['plasma','twilight'])
     
     if M.exit_pupil_prop_distance is not None:
