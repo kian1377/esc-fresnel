@@ -71,6 +71,7 @@ class single():
         self.pupil_mask_corr = 0*u.mm
         self.fsm_corr = 0*u.mm
         self.dm_corr = 0*u.mm
+        self.d_dm_pupil = 0*u.mm
         self.lyot_corr = 0*u.mm
 
         if use_corrections:
@@ -249,7 +250,8 @@ class single():
         self.dm_ref = dm_ref if dm_ref is not None else xp.zeros((self.Nact,self.Nact))
         self.set_dm(self.dm_ref, channel=0)
 
-        self.return_pupil = False
+        self.return_prefpm_pupil = False
+        self.return_postfpm_pupil = False
 
         self.source_offset = (0,0)
         self.as_per_lamD = ((self.wavelength_c/(self.esc_pupil_diam*self.lyot_ratio))*u.radian).to(u.arcsec)
@@ -352,6 +354,13 @@ class single():
         if self.wfes.get('input_lp') is not None: fosys1.add_optic(self.wfes['input_lp'])
         fosys1.add_optic(esc_optics.elements['input_qwp'], distance=esc_optics.distances['input_lp-input_qwp'])
         if self.wfes.get('input_qwp') is not None: fosys1.add_optic(self.wfes['input_qwp'])
+        if self.return_prefpm_pupil:
+            fosys1.add_optic(poppy.ScalarTransmission('oap6_placeholder'), distance=esc_optics.distances['input_qwp-oap6'])
+            if self.wfes.get('oap6') is not None: fosys1.add_optic(self.wfes['oap6'])
+            d_oap6_prefpm_pupil = - ( self.d_dm_pupil + esc_optics.distances['dm-input_lp'] + esc_optics.distances['input_lp-input_qwp'] + esc_optics.distances['input_qwp-oap6'])
+            print(d_oap6_prefpm_pupil)
+            fosys1.add_optic(poppy.ScalarTransmission('prefpm_pupil'), distance=d_oap6_prefpm_pupil)
+            return fosys1
         fosys1.add_optic(esc_optics.elements['oap6'], distance=esc_optics.distances['input_qwp-oap6'])
         if self.wfes.get('oap6') is not None: fosys1.add_optic(self.wfes['oap6'])
         fosys1.add_optic(esc_optics.elements['fpm'], distance=esc_optics.distances['oap6-fpm'] + self.fpm_corr)
@@ -361,28 +370,26 @@ class single():
         fosys2.add_optic(esc_optics.elements['oap7'], distance=esc_optics.distances['fpm-oap7'] - self.fpm_corr)
         if self.wfes.get('oap7') is not None: fosys2.add_optic(self.wfes['oap7'])
         fosys2.add_optic(esc_optics.elements['lyot_plane'], distance=esc_optics.distances['oap7-lyot'] + self.lyot_corr)
-        if self.return_pupil:
-            return fosys1, fosys2
         if self.use_lyot: fosys2.add_optic(self.LYOT)
         fosys2.add_optic(esc_optics.elements['oap9'], distance=esc_optics.distances['lyot-oap9'] - self.lyot_corr)
         if self.wfes.get('oap9') is not None: fosys2.add_optic(self.wfes['oap9'])
         fosys2.add_optic(esc_optics.elements['fieldstop'], distance=esc_optics.distances['oap9-fieldstop'] + self.fieldstop_corr)
         fosys2.add_optic(esc_optics.elements['collimator'], distance=esc_optics.distances['fieldstop-collimator'] - self.fieldstop_corr)
         if self.wfes.get('collimator') is not None: fosys2.add_optic(self.wfes['collimator'])
-
         fosys2.add_optic(esc_optics.elements['exit_pupil'], distance=self.d_collimator_exit_pupil)
-        fosys2.add_optic(esc_optics.elements['filter'], distance=esc_optics.distances['collimator-filter'] - self.d_collimator_exit_pupil)
+        d_exit_pupil_filter = esc_optics.distances['collimator-filter'] - self.d_collimator_exit_pupil
+        fosys2.add_optic(esc_optics.elements['filter'], distance=d_exit_pupil_filter)
         if self.wfes.get('filter') is not None: fosys2.add_optic(self.wfes['filter'])
-
-        # fosys2.add_optic(esc_optics.elements['filter'], distance=esc_optics.distances['collimator-filter'])
-        # if self.wfes.get('filter') is not None: fosys2.add_optic(self.wfes['filter'])
-
         fosys2.add_optic(esc_optics.elements['output_qwp'], distance=esc_optics.distances['filter-output_qwp'])
         if self.wfes.get('output_qwp') is not None: fosys2.add_optic(self.wfes['output_qwp'])
         fosys2.add_optic(esc_optics.elements['output_lp'], distance=esc_optics.distances['output_qwp-output_lp'])
         if self.wfes.get('output_lp') is not None: fosys2.add_optic(self.wfes['output_lp'])
         fosys2.add_optic(esc_optics.elements['oap10'], distance=esc_optics.distances['output_lp-oap10'])
         if self.wfes.get('oap10') is not None: fosys2.add_optic(self.wfes['oap10'])
+        if self.return_postfpm_pupil:
+            d_oap10_back_to_exit_pupil = - ( d_exit_pupil_filter + esc_optics.distances['filter-output_qwp'] + esc_optics.distances['output_qwp-output_lp'] + esc_optics.distances['output_lp-oap10'] )
+            fosys2.add_optic(poppy.ScalarTransmission('final_exit_pupil'), distance=d_oap10_back_to_exit_pupil)
+            return fosys1, fosys2
         fosys2.add_optic(poppy.Rotation(self.det_rotation, units='degrees'))
         fosys2.add_optic(poppy.Detector(pixelscale=self.camsci_pxscl, fov_pixels=self.npsf, interp_order=3, name='   camsci (fp)',), distance=esc_optics.distances['oap10-scicam'] + self.scicam_corr)
 
@@ -476,7 +483,8 @@ class single():
         return all_wfs
     
     def calc_wf(self): 
-        self.return_pupil = False
+        self.return_prefpm_pupil = False
+        self.return_postfpm_pupil = False
         fosys_to_fpm, fosys_to_scicam = self.init_fosys()
         ep_inwave = self.init_inwave()
         _, fpm_wf = fosys_to_fpm.calc_psf(inwave=ep_inwave, normalize='none', return_final=True)
@@ -491,8 +499,21 @@ class single():
         im = xp.abs(self.calc_wf())**2
         return im
     
-    def calc_pupil(self):
-        self.return_pupil = True
+    def calc_prefpm_pupil(self):
+        self.return_prefpm_pupil = True
+        fosys_to_prefpm_pupil = self.init_fosys()
+
+        ep_inwave = self.init_inwave()
+        _, prefpm_pupil_wf = fosys_to_prefpm_pupil.calc_psf(inwave=ep_inwave, normalize='none', return_final=True)
+
+        pupil = utils.pad_or_crop(prefpm_pupil_wf[-1].wavefront, self.npix)
+        amp = xp.abs(pupil) * self.GAP_MASK
+        phs = xp.angle(pupil) * self.GAP_MASK
+
+        return amp*xp.exp(1j*phs)
+
+    def calc_postfpm_pupil(self):
+        self.return_postfpm_pupil = True
         fosys_to_fpm, fosys_to_pupil = self.init_fosys()
 
         ep_inwave = self.init_inwave()
